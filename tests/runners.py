@@ -1,7 +1,6 @@
 import os
 import sys
 from functools import partial
-from StringIO import StringIO
 
 from spec import eq_, skip, Spec, raises, ok_, trap
 from mock import patch, Mock
@@ -13,7 +12,7 @@ from invoke.runners import Runner, Local
 from invoke.exceptions import Failure
 from invoke.platform import WINDOWS
 
-from _utils import support, reset_cwd, skip_if_windows
+from _utils import support, reset_cwd, skip_if_windows, mock_subprocess
 
 
 # Get the right platform-specific directory separator,
@@ -233,25 +232,13 @@ class Run(Spec):
 
         @skip_if_windows
         @trap
-        @patch('invoke.runners.Popen')
-        @patch('os.read')
-        def hide_both_hides_both_under_pty(self, read, Popen):
-            # Mock
-            process = Popen.return_value
-            process.returncode = 0
-            process.stdout.fileno.return_value = 1
-            process.stderr.fileno.return_value = 2
-            out = StringIO("this is my stdout")
-            err = StringIO("this is my stderr")
-            def fakeread(fileno, count):
-                fd = {1: out, 2: err}[fileno]
-                return fd.read(count)
-            read.side_effect = fakeread
-            # Run
-            run("whatever", hide='both')
-            # Test
-            for stream in sys.stdout, sys.stderr:
-                eq_(stream.getvalue().strip(), "")
+        def hide_both_hides_both_under_pty(self):
+            with mock_subprocess(stdout="boo", stderr="urns"):
+                # Run
+                run("whatever", hide='both')
+                # Test
+                for stream in sys.stdout, sys.stderr:
+                    eq_(stream.getvalue().strip(), "")
 
         @skip_if_windows
         def hide_out_hides_both_under_pty(self):
