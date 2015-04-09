@@ -1,6 +1,7 @@
 import os
 import sys
 from functools import partial
+from StringIO import StringIO
 
 from spec import eq_, skip, Spec, raises, ok_, trap
 from mock import patch, Mock
@@ -231,10 +232,26 @@ class Run(Spec):
             eq_(sys.stderr.getvalue().strip(), "bar")
 
         @skip_if_windows
-        def hide_both_hides_both_under_pty(self):
-            r = run(self.sub.format('both', hide='both'))
-            eq_(r.stdout, "")
-            eq_(r.stderr, "")
+        @trap
+        @patch('invoke.runners.Popen')
+        @patch('os.read')
+        def hide_both_hides_both_under_pty(self, read, Popen):
+            # Mock
+            process = Popen.return_value
+            process.returncode = 0
+            process.stdout.fileno.return_value = 1
+            process.stderr.fileno.return_value = 2
+            out = StringIO("this is my stdout")
+            err = StringIO("this is my stderr")
+            def fakeread(fileno, count):
+                fd = {1: out, 2: err}[fileno]
+                return fd.read(count)
+            read.side_effect = fakeread
+            # Run
+            run("whatever", hide='both')
+            # Test
+            for stream in sys.stdout, sys.stderr:
+                eq_(stream.getvalue().strip(), "")
 
         @skip_if_windows
         def hide_out_hides_both_under_pty(self):
