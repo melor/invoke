@@ -120,7 +120,9 @@ def mock_subprocess(stdout='', stderr=''):
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            with nested(patch('invoke.runners.Popen'), patch('os.read')) as (Popen, read):
+            with nested(
+                patch('invoke.runners.Popen'), patch('os.read')
+            ) as (Popen, read):
                 process = Popen.return_value
                 process.returncode = 0
                 process.stdout.fileno.return_value = 1
