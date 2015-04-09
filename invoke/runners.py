@@ -332,6 +332,8 @@ class Result(object):
     `Result` objects' truth evaluation is equivalent to their ``ok``
     attribute's value.
     """
+    # TODO: change 'exception' to be more generic re: swallowed exceptions,
+    # also probably a tuple or list.
     # TODO: inherit from namedtuple instead? heh
     def __init__(self, stdout, stderr, exited, pty, exception=None):
         self.exited = self.return_code = exited
