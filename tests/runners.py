@@ -232,13 +232,11 @@ class Run(Spec):
 
         @skip_if_windows
         @trap
+        @mock_subprocess(stdout="boo", stderr="urns")
         def hide_both_hides_both_under_pty(self):
-            with mock_subprocess(stdout="boo", stderr="urns"):
-                # Run
-                run("whatever", hide='both')
-                # Test
-                for stream in sys.stdout, sys.stderr:
-                    eq_(stream.getvalue().strip(), "")
+            run("whatever", hide='both')
+            for stream in sys.stdout, sys.stderr:
+                eq_(stream.getvalue().strip(), "")
 
         @skip_if_windows
         def hide_out_hides_both_under_pty(self):

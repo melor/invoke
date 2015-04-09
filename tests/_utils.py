@@ -116,17 +116,21 @@ assert_contains = partial(_assert_contains, invert=False)
 assert_not_contains = partial(_assert_contains, invert=True)
 
 
-@contextmanager
 def mock_subprocess(stdout='', stderr=''):
-    with nested(patch('invoke.runners.Popen'), patch('os.read')) as (Popen, read):
-        process = Popen.return_value
-        process.returncode = 0
-        process.stdout.fileno.return_value = 1
-        process.stderr.fileno.return_value = 2
-        out = StringIO("this is my stdout")
-        err = StringIO("this is my stderr")
-        def fakeread(fileno, count):
-            fd = {1: out, 2: err}[fileno]
-            return fd.read(count)
-        read.side_effect = fakeread
-        yield
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            with nested(patch('invoke.runners.Popen'), patch('os.read')) as (Popen, read):
+                process = Popen.return_value
+                process.returncode = 0
+                process.stdout.fileno.return_value = 1
+                process.stderr.fileno.return_value = 2
+                out = StringIO("this is my stdout")
+                err = StringIO("this is my stderr")
+                def fakeread(fileno, count):
+                    fd = {1: out, 2: err}[fileno]
+                    return fd.read(count)
+                read.side_effect = fakeread
+                f(*args, **kwargs)
+        return wrapper
+    return decorator
