@@ -234,7 +234,13 @@ class Run(Spec):
         @trap
         @mock_subprocess(stdout="boo", stderr="urns")
         def hide_both_hides_both_under_pty(self):
-            run("whatever", hide='both')
+            # What was the old test doing? it was running 'echo <shit to stdout
+            # and/or stderr>' in a subproce w/ pty, then running THAT in a
+            # non-pty run() for some reason. Maybe because can't easily mock
+            # pexpect? But should be able to do same as what I did for the
+            # broken version of this test? (At least, I can apply it to all the
+            # non pty tests...)
+            run("whatever", hide='both', pty=True)
             for stream in sys.stdout, sys.stderr:
                 eq_(stream.getvalue().strip(), "")
 
